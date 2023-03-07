@@ -10,6 +10,7 @@ func main() {
 	h := server.Default()
 
 	// 静态资源访问
+	h.StaticFile("/public","./biz")
 	h.Static("/public","./biz")
 	register(h)
 	h.Spin()

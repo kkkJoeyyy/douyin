@@ -13,11 +13,11 @@ import (
 
 func TestFavoriteAction(t *testing.T) {
 	h := server.Default()
-	h.POST("/douyin/favorite", FavoriteAction)
-	url := "/douyin/favorite"
+	h.POST("/douyin/favorite/action", FavoriteAction)
+	url := "/douyin/favorite/action"
 	method := "POST"
 
-	reqBody := strings.NewReader("token=IiujEkqTWcmsEuJOLRKcpDQuasgDjernZMwDFuZhNspVJlbyCD&video=7&action_type=1")
+	reqBody := strings.NewReader("action_type=1&token=FtWeIqOfPtokcIwGWNqAPKnQqhOfGZxfUuUcawOEiAVCQeCXzj&video_id=7")
 	w := ut.PerformRequest(h.Engine,
 		method,
 		url,

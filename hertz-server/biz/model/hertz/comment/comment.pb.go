@@ -7,11 +7,12 @@
 package comment
 
 import (
+	reflect "reflect"
+	sync "sync"
+
 	_ "github.com/simplecolding/douyin/hertz-server/biz/model/api"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
-	reflect "reflect"
-	sync "sync"
 )
 
 const (
@@ -31,6 +32,7 @@ type DouyinCommentActionRequest struct {
 	ActionType  int32  `protobuf:"varint,3,opt,name=action_type,json=actionType,proto3" json:"action_type,omitempty" form:"action_type" query:"action_type"`     // 1-发布评论，2-删除评论
 	CommentText string `protobuf:"bytes,4,opt,name=comment_text,json=commentText,proto3" json:"comment_text,omitempty" form:"comment_text" query:"comment_text"` // 用户填写的评论内容，在action_type=1的时候使用
 	CommentId   int64  `protobuf:"varint,5,opt,name=comment_id,json=commentId,proto3" json:"comment_id,omitempty" form:"comment_id" query:"comment_id"`          // 要删除的评论id，在action_type=2的时候使用
+	CreateDate  string `protobuf:"bytes,6,opt,name=create_date,json=createDate,proto3" json:"create_date,omitempty" form:"create_date" query:"create_date"`      // 视频发布日期，格式
 }
 
 func (x *DouyinCommentActionRequest) Reset() {
@@ -98,6 +100,13 @@ func (x *DouyinCommentActionRequest) GetCommentId() int64 {
 		return x.CommentId
 	}
 	return 0
+}
+
+func (x *DouyinCommentActionRequest) GetCreateDate() string {
+	if x != nil {
+		return x.CreateDate
+	}
+	return ""
 }
 
 type DouyinCommentActionResponse struct {
@@ -416,7 +425,7 @@ type Comment struct {
 	Id         int64  `protobuf:"varint,1,opt,name=id,proto3" json:"id,omitempty" form:"id" query:"id"`                                                    // 视频评论id
 	User       *User  `protobuf:"bytes,2,opt,name=user,proto3" json:"user,omitempty" form:"user" query:"user"`                                             // 评论用户信息
 	Content    string `protobuf:"bytes,3,opt,name=content,proto3" json:"content,omitempty" form:"content" query:"content"`                                 // 评论内容
-	CreateDate string `protobuf:"bytes,4,opt,name=create_date,json=createDate,proto3" json:"create_date,omitempty" form:"create_date" query:"create_date"` // 评论发布日期，格式 mm-dd
+	CreateDate string `protobuf:"bytes,4,opt,name=create_date,json=createDate,proto3" json:"create_date,omitempty" form:"create_date" query:"create_date"` // 视频发布日期，格式
 }
 
 func (x *Comment) Reset() {
@@ -451,6 +460,13 @@ func (*Comment) Descriptor() ([]byte, []int) {
 	return file_comment_proto_rawDescGZIP(), []int{5}
 }
 
+func (x *Comment) GetCreateDate() string {
+	if x != nil {
+		return x.CreateDate
+	}
+	return ""
+}
+
 func (x *Comment) GetId() int64 {
 	if x != nil {
 		return x.Id
@@ -468,13 +484,6 @@ func (x *Comment) GetUser() *User {
 func (x *Comment) GetContent() string {
 	if x != nil {
 		return x.Content
-	}
-	return ""
-}
-
-func (x *Comment) GetCreateDate() string {
-	if x != nil {
-		return x.CreateDate
 	}
 	return ""
 }

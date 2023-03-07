@@ -7,12 +7,13 @@
 package video
 
 import (
-	_ "github.com/simplecolding/douyin/hertz-server/biz/model/api"
-	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
-	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 	"mime/multipart"
 	reflect "reflect"
 	sync "sync"
+
+	_ "github.com/simplecolding/douyin/hertz-server/biz/model/api"
+	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
+	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 )
 
 const (
@@ -162,6 +163,7 @@ type Video struct {
 	CommentCount  int64  `protobuf:"varint,6,opt,name=comment_count,json=commentCount,proto3" json:"comment_count,omitempty" form:"comment_count" query:"comment_count"`      // 视频的评论总数
 	IsFavorite    bool   `protobuf:"varint,7,opt,name=is_favorite,json=isFavorite,proto3" json:"is_favorite,omitempty" form:"is_favorite" query:"is_favorite"`                // true-已点赞，false-未点赞
 	Title         string `protobuf:"bytes,8,opt,name=title,proto3" json:"title,omitempty" form:"title" query:"title"`                                                         // 视频标题
+	CreateDate    string `protobuf:"bytes,9,opt,name=create_date,json=createDate,proto3" json:"create_date,omitempty" form:"create_date" query:"create_date"`                 // 视频发布日期，格式
 }
 
 func (x *Video) Reset() {
@@ -248,6 +250,13 @@ func (x *Video) GetIsFavorite() bool {
 func (x *Video) GetTitle() string {
 	if x != nil {
 		return x.Title
+	}
+	return ""
+}
+
+func (x *Video) GetCreateDate() string {
+	if x != nil {
+		return x.CreateDate
 	}
 	return ""
 }

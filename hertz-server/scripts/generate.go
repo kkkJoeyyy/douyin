@@ -1,7 +1,7 @@
 package main
 
 import (
-	"github.com/simplecolding/douyin/pkg/constants"
+	"github.com/simplecolding/douyin/hertz-server/biz/utils"
 	"gorm.io/driver/mysql"
 	"gorm.io/gen"
 	"gorm.io/gorm"
@@ -28,7 +28,7 @@ import (
 //
 //}
 func main() {
-	gormdb, _ := gorm.Open(mysql.Open(constants.MySQLDefaultDSN))
+	gormdb, _ := gorm.Open(mysql.Open(utils.MySQLDefaultDSN))
 	g := gen.NewGenerator(gen.Config{
 		OutPath: "../biz/orm/dal",
 		ModelPkgPath: "../biz/orm/model",
