@@ -7,7 +7,6 @@ import (
 	"context"
 	"fmt"
 	"io/ioutil"
-	"log"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -84,12 +83,18 @@ func VideoPublish(ctx context.Context, c *app.RequestContext) {
 	// test
 	// 生成封面
 	coverPath := "./biz/public/cover/" + fileName
-	coverPath, err = GetSnapshot(filePath, coverPath,1)
+	coverPath, err = GetSnapshot(filePath, coverPath, 1)
+	var coverUrl string
+	if err != nil {
+		coverUrl = utils.CoverTestURL
+	} else {
+		coverUrl = utils.CoverURL + fileName + ".png"
+	}
 	var cstSh, _ = time.LoadLocation("Asia/Shanghai")
 	t := time.Now().In(cstSh)
-	err = dal.Video.WithContext(ctx).Create(&model.Video{UID: uid, PlayURL: playUrl, CoverURL: utils.CoverURL+fileName+".png",
+	err = dal.Video.WithContext(ctx).Create(&model.Video{UID: uid, PlayURL: playUrl, CoverURL: coverUrl,
 		CreatedAt: t})
-	
+
 	if err != nil {
 		c.String(consts.StatusBadRequest, err.Error())
 		println("write to database failed")
@@ -232,6 +237,7 @@ func VideoQueryUser(uid int64) video.User {
 }
 
 func GetSnapshot(videoPath, snapshotPath string, frameNum int) (snapshotName string, err error) {
+	defer recover()
 	buf := bytes.NewBuffer(nil)
 	err = ffmpeg.Input(videoPath).
 		Filter("select", ffmpeg.Args{fmt.Sprintf("gte(n,%d)", frameNum)}).
@@ -239,19 +245,19 @@ func GetSnapshot(videoPath, snapshotPath string, frameNum int) (snapshotName str
 		WithOutput(buf, os.Stdout).
 		Run()
 	if err != nil {
-		log.Fatal("生成缩略图失败：", err)
+		print("生成缩略图失败：", err)
 		return "", err
 	}
 
 	img, err := imaging.Decode(buf)
 	if err != nil {
-		log.Fatal("生成缩略图失败：", err)
+		print("生成缩略图失败：", err)
 		return "", err
 	}
 
 	err = imaging.Save(img, snapshotPath+".png")
 	if err != nil {
-		log.Fatal("生成缩略图失败：", err)
+		print("生成缩略图失败：", err)
 		return "", err
 	}
 

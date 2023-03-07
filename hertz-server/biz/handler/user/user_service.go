@@ -19,6 +19,7 @@ import (
 	_ "github.com/simplecolding/douyin/hertz-server/biz/orm" //
 	"github.com/simplecolding/douyin/hertz-server/biz/orm/dal"
 	"github.com/simplecolding/douyin/hertz-server/biz/orm/model"
+	"golang.org/x/crypto/bcrypt"
 )
 
 // UserLogin .
@@ -36,7 +37,8 @@ func UserLogin(ctx context.Context, c *app.RequestContext) {
 		c.JSON(consts.StatusBadRequest, "用户不存在!!!")
 		return
 	}
-	if u.Password != req.Password {
+	err = bcrypt.CompareHashAndPassword([]byte(u.Password), []byte(req.Password))
+	if err != nil {
 		c.JSON(consts.StatusBadRequest, "密码错误!!!")
 		return
 	}
@@ -90,13 +92,15 @@ func UserRegister(ctx context.Context, c *app.RequestContext) {
 	t := time.Now().In(cstSh)
 	rand.Seed(time.Now().UnixNano())
 	randID := rand.Intn(5) + 1
+	// 加密
+	pwd, _ := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
 	userinfo := model.UserAuth{
-		UserName: username,
-		Password: password,
-		CreatedAt: t,
-		Avatar: utils.AvatarTest + strconv.Itoa(randID) + ".jpg",
+		UserName:        username,
+		Password:        string(pwd),
+		CreatedAt:       t,
+		Avatar:          utils.AvatarTest + strconv.Itoa(randID) + ".jpg",
 		BackgroundImage: utils.BackgroundTest + strconv.Itoa(randID) + ".jpg",
-		Signature: "这个人很懒,什么都没有留下",
+		Signature:       "这个人很懒,什么都没有留下",
 	}
 	err = dal.UserAuth.Create(&userinfo)
 	if err != nil {
