@@ -9,6 +9,7 @@ require (
 	github.com/hertz-contrib/cors v0.0.0-20220601061225-50f4e582beaf
 	github.com/hertz-contrib/jwt v1.0.2
 	github.com/simplecolding/douyin v0.0.0-20230219120257-52ab1f372fde
+	golang.org/x/crypto v0.0.0-20221005025214-4161e89ecf1b
 	google.golang.org/protobuf v1.28.1
 	gorm.io/driver/mysql v1.4.7
 	gorm.io/gen v0.3.21

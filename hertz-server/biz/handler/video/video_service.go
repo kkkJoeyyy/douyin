@@ -97,6 +97,9 @@ func VideoPublish(ctx context.Context, c *app.RequestContext) {
 
 	playUrl := "http://43.139.145.135:7777/public/" + fileName + ".mp4"
 	println("playUrl: ", playUrl)
+	// fs := http.FileServer(http.Dir("./biz/public/"))
+	// http.Handle("/playVideo/", http.StripPrefix("/playVideo/", fs))
+
 	// test
 	err = dal.Video.WithContext(ctx).Create(&model.Video{UID: 1, PlayURL: playUrl, CoverURL: "coverUrl"})
 	if err != nil {
@@ -114,8 +117,6 @@ func VideoPublish(ctx context.Context, c *app.RequestContext) {
 // GetPublishList .
 // @router /douyin/publish/list [GET]
 func GetPublishList(ctx context.Context, c *app.RequestContext) {
-	// todo
-	// resp是正常的，应该是playUrl有问题 所以播放不了
 	var err error
 	var req video.DouyinPublishListRequest
 	err = c.BindAndValidate(&req)
@@ -177,8 +178,6 @@ func GetFeed(ctx context.Context, c *app.RequestContext) {
 	// 30 videos for a single time
 	limit := 30
 	// data, err := dal.Video.Order("created_at desc").Limit(limit).Find()
-	// todo
-	// 这里不知道Order不知道咋放函数
 	//data, err := dal.Video.Limit(limit).Find()
 	// Not test
 	data, err := dal.Video.Order(dal.Video.UpdatedAt).Limit(limit).Find()
@@ -186,6 +185,7 @@ func GetFeed(ctx context.Context, c *app.RequestContext) {
 		println("query database failed")
 		return
 	}
+	// fmt.Println(data)
 	resp.StatusCode = 0
 	resp.StatusMsg = "success"
 	var v []*video.Video
@@ -193,7 +193,7 @@ func GetFeed(ctx context.Context, c *app.RequestContext) {
 		var tmp video.Video
 		tmp.Id = d.Vid
 		tmp.CoverUrl = d.CoverURL
-		tmp.PlayUrl = d.PlayURL
+		tmp.PlayUrl = d.CoverURL
 		v = append(v, &tmp)
 	}
 	resp.VideoList = v

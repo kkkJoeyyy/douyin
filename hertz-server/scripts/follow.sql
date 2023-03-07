@@ -1,7 +1,7 @@
 CREATE TABLE `user_auth` (
                                `uid` bigint unsigned AUTO_INCREMENT COMMENT '主键',
                                `user_name` varchar(20) not null unique COMMENT '用户名',
-                               `password` varchar(20) not null COMMENT '密码',
+                               `password` varchar(65) not null COMMENT '密码',
                                `follow_count` bigint default 0 COMMENT '关注人数',
                                `follower_count` varchar(20) default 0  COMMENT '粉丝总数',
                                `is_follow` boolean default false COMMENT '是否关注，true-已关注，false-未关注',
