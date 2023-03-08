@@ -5,6 +5,7 @@ package video
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"os"
@@ -13,6 +14,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/simplecolding/douyin/hertz-server/biz/redis"
 	"github.com/simplecolding/douyin/hertz-server/biz/utils"
 
 	"github.com/cloudwego/hertz/pkg/app"
@@ -51,7 +53,7 @@ func VideoPublish(ctx context.Context, c *app.RequestContext) {
 	}
 
 	byteContainer = fileRaw
-	flag, userName, uid := utils.Auth(ctx, r.Token)
+	flag, userName, uid, _ := utils.Auth(ctx, r.Token)
 	if !flag {
 		c.JSON(consts.StatusBadRequest, "token错误")
 		return
@@ -112,44 +114,58 @@ func VideoPublish(ctx context.Context, c *app.RequestContext) {
 func GetPublishList(ctx context.Context, c *app.RequestContext) {
 	var err error
 	var req video.DouyinPublishListRequest
+	resp := new(video.DouyinFavoriteListResponse)
+
 	err = c.BindAndValidate(&req)
 	if err != nil {
 		c.String(consts.StatusBadRequest, err.Error())
 		return
 	}
 	// auth
-	flag, _, uid := utils.Auth(ctx, req.Token)
+	flag, _, uid, uidString := utils.Auth(ctx, req.Token)
 	if !flag {
 		c.JSON(consts.StatusBadRequest, "token错误")
 		return
 	}
 
-	resp := new(video.DouyinFavoriteListResponse)
 	// todo 需要limit8?分页??
 	data, err := dal.Video.Where(dal.Video.UID.Eq(uid)).Find()
 	if err != nil {
 		println("query database failed")
+		c.JSON(consts.StatusBadRequest, "query database failed")
 		return
 	}
 	// query userinfo
 	userInfo := VideoQueryUser(uid)
 
 	var v []*video.Video
-	for _, d := range data {
-		vid := d.Vid
-		var tmp video.Video
-		tmp.Id = d.Vid
-		tmp.CoverUrl = d.PlayURL
-		tmp.PlayUrl = d.PlayURL
-		tmp.CoverUrl = d.CoverURL
-		tmp.FavoriteCount, _ = dal.Video.Where(dal.Video.Vid.Eq(vid)).Count()
-		tmp.CommentCount, _ = dal.Comment.Where(dal.Comment.Vid.Eq(vid)).Count()
-		fav, _ := dal.Favorite.CountVidAndUid(vid, uid)
-		tmp.IsFavorite = len(fav) >= 1
-		tmp.Title = d.Title
-		tmp.Author = &userInfo
-		v = append(v, &tmp)
+	redisCtx, cancel := context.WithTimeout(context.Background(), 500*time.Hour)
+	defer cancel()
+	// 添加redis缓存
+	rbytes := []byte(redis.RD.Get(redisCtx, uidString).Val())
+
+	if len(rbytes) != 0 {
+		json.Unmarshal(rbytes, &v)
+	} else {
+		for _, d := range data {
+			vid := d.Vid
+			var tmp video.Video
+			tmp.Id = d.Vid
+			tmp.CoverUrl = d.PlayURL
+			tmp.PlayUrl = d.PlayURL
+			tmp.CoverUrl = d.CoverURL
+			tmp.FavoriteCount, _ = dal.Video.Where(dal.Video.Vid.Eq(vid)).Count()
+			tmp.CommentCount, _ = dal.Comment.Where(dal.Comment.Vid.Eq(vid)).Count()
+			fav, _ := dal.Favorite.CountVidAndUid(vid, uid)
+			tmp.IsFavorite = len(fav) >= 1
+			tmp.Title = d.Title
+			tmp.Author = &userInfo
+			v = append(v, &tmp)
+		}
+		data, _ := json.Marshal(v)
+		redis.RD.Set(redisCtx, uidString, data, time.Second*20)
 	}
+
 	resp.VideoList = v
 	resp.StatusCode = 0
 	resp.StatusMsg = "success"
@@ -167,37 +183,52 @@ func GetFeed(ctx context.Context, c *app.RequestContext) {
 		return
 	}
 	// 鉴权,如果没有token的话uid为0
-	_, _, uid := utils.Auth(ctx, req.Token)
+	_, _, uid, _ := utils.Auth(ctx, req.Token)
 	resp := new(video.DouyinFeedResponse)
 	// todo
 	// 30 videos for a single time
 	limit := 30
 	// Not test
-	data, err := dal.Video.Order(dal.Video.CreatedAt.Desc()).Limit(limit).Find()
-	if err != nil {
-		println("query database failed")
-		return
+
+	redisCtx, cancel := context.WithTimeout(context.Background(), 500*time.Hour)
+	defer cancel()
+	var v []*video.Video
+
+	keyString := "videoList"
+	rbytes := []byte(redis.RD.Get(redisCtx, keyString).Val())
+	// var rbytes []byte
+	if len(rbytes) != 0 {
+		json.Unmarshal(rbytes, &v)
+		// fmt.Print("get from redis", v)
+	} else {
+		data, err := dal.Video.Order(dal.Video.CreatedAt.Desc()).Limit(limit).Find()
+		if err != nil {
+			println("query database failed")
+			return
+		}
+		for _, d := range data {
+			var tmp video.Video
+			tmp.Id = d.Vid
+			tmp.CoverUrl = d.CoverURL
+			tmp.PlayUrl = d.PlayURL
+			tmp.Title = d.Title
+			tmp.FavoriteCount, _ = dal.Favorite.Where(dal.Favorite.Vid.Eq(d.Vid)).Count()
+			tmp.CommentCount, _ = dal.Comment.Where(dal.Comment.Vid.Eq(d.Vid)).Count()
+			//fav, _ := dal.Favorite.CountVidAndUid(d.Vid, d.UID)
+			fav, _ := dal.Favorite.Where(dal.Favorite.Vid.Eq(d.Vid)).Where(dal.Favorite.UID.Eq(uid)).Count()
+			tmp.IsFavorite = fav >= 1
+			tmp.Title = d.Title
+			userInfo := VideoQueryUser(d.UID)
+			tmp.Author = &userInfo
+			v = append(v, &tmp)
+		}
+		bytes, _ := json.Marshal(v)
+		redis.RD.Set(redisCtx, keyString, bytes, time.Second*30)
 	}
+
+	resp.VideoList = v
 	resp.StatusCode = 0
 	resp.StatusMsg = "success"
-	var v []*video.Video
-	for _, d := range data {
-		var tmp video.Video
-		tmp.Id = d.Vid
-		tmp.CoverUrl = d.CoverURL
-		tmp.PlayUrl = d.PlayURL
-		tmp.Title = d.Title
-		tmp.FavoriteCount, _ = dal.Favorite.Where(dal.Favorite.Vid.Eq(d.Vid)).Count()
-		tmp.CommentCount, _ = dal.Comment.Where(dal.Comment.Vid.Eq(d.Vid)).Count()
-		//fav, _ := dal.Favorite.CountVidAndUid(d.Vid, d.UID)
-		fav, _ := dal.Favorite.Where(dal.Favorite.Vid.Eq(d.Vid)).Where(dal.Favorite.UID.Eq(uid)).Count()
-		tmp.IsFavorite = fav >= 1
-		tmp.Title = d.Title
-		userInfo := VideoQueryUser(d.UID)
-		tmp.Author = &userInfo
-		v = append(v, &tmp)
-	}
-	resp.VideoList = v
 	c.JSON(consts.StatusOK, resp)
 }
 

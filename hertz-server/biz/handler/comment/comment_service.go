@@ -31,7 +31,7 @@ func CommentAction(ctx context.Context, c *app.RequestContext) {
 	// u, _ := c.Get(mw.JwtMiddleware.IdentityKey)
 	// println("comment:", u.(*mw.Claim).ID, u.(*mw.Claim).Username)
 	// 鉴权
-	flag, _, uid := utils.Auth(ctx, req.Token)
+	flag, _, uid, _ := utils.Auth(ctx, req.Token)
 	if !flag {
 		c.JSON(consts.StatusBadRequest, "token错误")
 		return

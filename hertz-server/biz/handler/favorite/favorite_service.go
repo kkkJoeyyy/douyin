@@ -4,12 +4,13 @@ package favorite
 
 import (
 	"context"
+	"strconv"
+
 	"github.com/cloudwego/hertz/pkg/app"
 	"github.com/cloudwego/hertz/pkg/protocol/consts"
 	"github.com/simplecolding/douyin/hertz-server/biz/orm/dal"
 	"github.com/simplecolding/douyin/hertz-server/biz/orm/model"
 	"github.com/simplecolding/douyin/hertz-server/biz/utils"
-	"strconv"
 
 	favorite "github.com/simplecolding/douyin/hertz-server/biz/model/hertz/favorite"
 )
@@ -21,11 +22,11 @@ func FavoriteAction(ctx context.Context, c *app.RequestContext) {
 	var req favorite.DouyinFavoriteActionRequest
 	err = c.BindAndValidate(&req)
 	if err != nil {
-		c.JSON(consts.StatusBadRequest,"参数错误!!!")
+		c.JSON(consts.StatusBadRequest, "参数错误!!!")
 	}
 	// 鉴权
-	flag, _ ,uid := utils.Auth(ctx,req.Token)
-	if !flag{
+	flag, _, uid, _ := utils.Auth(ctx, req.Token)
+	if !flag {
 		c.JSON(consts.StatusBadRequest, "token错误")
 		return
 	}
@@ -35,7 +36,7 @@ func FavoriteAction(ctx context.Context, c *app.RequestContext) {
 	exitRow := len(data) != 0
 	action := req.ActionType
 	if action == 1 {
-		if exitRow  {
+		if exitRow {
 			// 取消点赞
 			dal.Favorite.WithContext(ctx).Where(dal.Favorite.Lid.Eq(data[0].Lid)).Update(dal.Favorite.Status, false)
 			resp := new(favorite.DouyinFavoriteActionResponse)
@@ -91,9 +92,9 @@ func GetFavoriteList(ctx context.Context, c *app.RequestContext) {
 		v.FavoriteCount, _ = dal.Favorite.Where(dal.Favorite.Vid.Eq(d.Vid)).Count()
 		v.CommentCount, _ = dal.Comment.Where(dal.Comment.Vid.Eq(d.Vid)).Count()
 		data, err := dal.Favorite.FilterWithVidAndUid(d.Vid, uid)
-		if len(data) > 0{
+		if len(data) > 0 {
 			v.IsFavorite = true
-		}else {
+		} else {
 			v.IsFavorite = false
 		}
 		v.Title = videoInfo.Title

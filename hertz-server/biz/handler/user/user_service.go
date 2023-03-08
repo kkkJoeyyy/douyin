@@ -128,7 +128,7 @@ func UserInfo(ctx context.Context, c *app.RequestContext) {
 		return
 	}
 	// 鉴权
-	flag, _, uid := utils.Auth(ctx, req.Token)
+	flag, _, uid, _ := utils.Auth(ctx, req.Token)
 	println(uid)
 	if !flag {
 		c.JSON(consts.StatusBadRequest, "token错误")
